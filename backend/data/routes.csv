@@ -1,0 +1,7 @@
+route_id,route_name,origin_port,destination_port,corridor,distance_km,transit_time_days,capacity_mbd,baseline_risk_score,is_blocked
+R001,Ras Tanura→Hormuz→Indian Ocean→Mundra,Ras Tanura,Mundra,Hormuz,5200,18,3500,48,0
+R002,Baku→Hormuz→Indian Ocean→Jawaharlal Nehru Port,Baku,Jawaharlal Nehru Port,Hormuz,6800,22,800,52,0
+R003,Houston→Cape of Good Hope→Indian Ocean→Mundra,Houston,Mundra,Cape of Good Hope,12500,35,600,25,0
+R004,Novorossiysk→Suez→Red Sea→Mundra,Novorossiysk,Mundra,Suez,8200,24,500,58,0
+R005,Kharg Island→Hormuz→Chabahar→Mundra,Kharg Island,Mundra,Persian Gulf,4800,16,1200,78,0
+R006,Abu Dhabi→Hormuz→Indian Ocean→Cochin Port,Abu Dhabi,Cochin Port,Hormuz,5500,19,1500,45,0

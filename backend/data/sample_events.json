@@ -1,0 +1,38 @@
+[
+  {
+    "event_id": "EVT001",
+    "timestamp": "2026-08-19T10:30:00Z",
+    "event_type": "geopolitical_tension",
+    "location": "Strait of Hormuz",
+    "description": "Naval tensions escalate near Strait of Hormuz, raising crude-oil shipping disruption concerns",
+    "severity_raw": 0.72,
+    "affected_corridor": "Hormuz",
+    "india_relevance": 0.91,
+    "source": "GDELT_NEWS",
+    "confidence": 0.78
+  },
+  {
+    "event_id": "EVT002",
+    "timestamp": "2026-08-18T14:15:00Z",
+    "event_type": "port_disruption",
+    "location": "Novorossiysk Port, Russia",
+    "description": "Technical issues reported at Novorossiysk export terminal affecting crude loading",
+    "severity_raw": 0.45,
+    "affected_corridor": "Suez",
+    "india_relevance": 0.65,
+    "source": "GDELT_NEWS",
+    "confidence": 0.62
+  },
+  {
+    "event_id": "EVT003",
+    "timestamp": "2026-08-17T08:00:00Z",
+    "event_type": "sanctions",
+    "location": "Iran",
+    "description": "Additional sanctions announced on Iranian crude oil exports",
+    "severity_raw": 0.68,
+    "affected_corridor": "Persian Gulf",
+    "india_relevance": 0.78,
+    "source": "GDELT_NEWS",
+    "confidence": 0.85
+  }
+]

@@ -1,0 +1,34 @@
+# Core framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+pydantic-settings==2.1.0
+
+# Data & ML
+pandas==2.1.3
+numpy==1.26.2
+scikit-learn==1.3.2
+xgboost==2.0.3
+requests==2.31.0
+
+# Database
+sqlalchemy==2.0.23
+
+# Graph & optimization
+networkx==3.2
+ortools==9.7.2996
+
+# NLP & LLM (soft dependencies - optional)
+langchain==0.1.4
+ollama==0.1.0
+
+# Testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+httpx==0.25.2
+
+# Environment
+python-dotenv==1.0.0
+
+# Utilities
+aiofiles==23.2.1

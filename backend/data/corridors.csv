@@ -1,0 +1,6 @@
+corridor_name,location,baseline_risk_score,estimated_current_disruption_probability,affected_routes,affected_suppliers,india_import_percentage
+Hormuz,Persian Gulf,65,0.15,R001|R002|R005|R006,S001|S002|S003|S004|S005|S006,55
+Suez,Red Sea,42,0.08,R004,S008,12
+Red Sea,International Waters,48,0.10,R001|R002|R004|R006,S001|S002|S008,35
+Cape of Good Hope,South Africa,25,0.02,R003,S007,8
+Persian Gulf,International Waters,60,0.12,R001|R005|R006,S001|S003|S004|S005,45

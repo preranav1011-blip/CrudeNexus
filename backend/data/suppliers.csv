@@ -1,0 +1,9 @@
+supplier_id,supplier_name,supplier_country,production_capacity_mbd,estimated_cost_per_barrel,geopolitical_baseline_risk_score
+S001,Saudi Aramco,Saudi Arabia,3500,75,45
+S002,Rosneft,Russia,2800,70,68
+S003,NIOC,Iran,1500,60,85
+S004,ADNOC,UAE,2800,76,38
+S005,Kuwait Petroleum,Kuwait,1200,72,48
+S006,Qatar Petroleum,Qatar,800,74,42
+S007,ExxonMobil US,USA,600,82,20
+S008,SOCAR Baku,Azerbaijan,500,73,52

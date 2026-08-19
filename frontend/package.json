@@ -1,0 +1,44 @@
+{
+  "name": "crudenexus-frontend",
+  "version": "0.1.0",
+  "description": "EnergyResilience AI Frontend for India Crude Supply Chain",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint src --ext ts,tsx"
+  },
+  "dependencies": {
+    "@angular/animations": "^17.0.0",
+    "@angular/common": "^17.0.0",
+    "@angular/compiler": "^17.0.0",
+    "@angular/core": "^17.0.0",
+    "@angular/forms": "^17.0.0",
+    "@angular/platform-browser": "^17.0.0",
+    "@angular/platform-browser-dynamic": "^17.0.0",
+    "@angular/router": "^17.0.0",
+    "echarts": "^5.4.3",
+    "leaflet": "^1.9.4",
+    "cytoscape": "^3.28.1",
+    "axios": "^1.6.2",
+    "rxjs": "^7.8.1",
+    "tslib": "^2.6.2",
+    "zone.js": "^0.14.2"
+  },
+  "devDependencies": {
+    "@angular/cli": "^17.0.0",
+    "@angular/compiler-cli": "^17.0.0",
+    "@types/node": "^20.10.0",
+    "@types/leaflet": "^1.9.8",
+    "@types/cytoscape": "^3.19.13",
+    "typescript": "^5.2.2",
+    "vite": "^5.0.0",
+    "@vitejs/plugin-basic-ssl": "^1.0.1",
+    "eslint": "^8.54.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
+

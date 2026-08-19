@@ -1,0 +1,13 @@
+port_id,port_name,country,port_type,capacity_mbd,geopolitical_risk_score
+P001,Ras Tanura,Saudi Arabia,export,3500,45
+P002,Baku,Azerbaijan,export,500,52
+P003,Houston,USA,export,600,20
+P004,Kharg Island,Iran,export,1500,85
+P005,Abu Dhabi,UAE,export,2000,38
+P006,Mina Al Ahmadi,Kuwait,export,1200,48
+P007,Doha,Qatar,export,800,42
+P008,Novorossiysk,Russia,export,500,68
+P009,Mundra,India,import,2500,30
+P010,Jawaharlal Nehru Port,India,import,1800,30
+P011,Cochin Port,India,import,800,30
+P012,Paradip Port,India,import,1200,30
