@@ -1,62 +1,62 @@
 """Pydantic models for suppliers and routes"""
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 
 
-class SupplierBase(BaseModel):
-    """Base supplier model"""
-    supplier_id: str
-    supplier_name: str
-    supplier_country: str
-    production_capacity_mbd: float
-    estimated_cost_per_barrel: float
-    geopolitical_baseline_risk_score: float
-
-
-class SupplierResponse(SupplierBase):
+class SupplierResponse(BaseModel):
     """Response model for supplier"""
-    pass
-
-    class Config:
-        from_attributes = True
-
-
-class RouteBase(BaseModel):
-    """Base route model"""
-    route_id: str
-    route_name: str
-    origin_port: str
-    destination_port: str
-    corridor: str
-    distance_km: float
-    transit_time_days: float
+    supplier_id: str
+    name: str
+    country: str
     capacity_mbd: float
-    baseline_risk_score: float
-    is_blocked: bool = False
-
-
-class RouteResponse(RouteBase):
-    """Response model for route"""
-    pass
+    cost_per_barrel: float
+    geopolitical_risk: float
 
     class Config:
         from_attributes = True
 
 
-class CorridorBase(BaseModel):
-    """Base corridor model"""
+class RouteResponse(BaseModel):
+    """Response model for route"""
+    route_id: str
+    origin: str
+    destination: str
+    corridor_name: str
+    distance_km: float
+    transit_days: float
+    capacity_mbd: float
+    chokepoint: str
+    geopolitical_risk_score: float
+
+    class Config:
+        from_attributes = True
+
+
+class PortResponse(BaseModel):
+    """Response model for port"""
+    port_id: str
+    country: str
+    port_name: str
+    port_type: str
+    capacity_mbd: float
+    draft_constraints: float
+    infrastructure_quality: str
+    trade_volume_2023_mbd: float
+
+    class Config:
+        from_attributes = True
+
+
+class CorridorResponse(BaseModel):
+    """Response model for corridor"""
+    corridor_id: str
     corridor_name: str
     location: str
-    baseline_risk_score: float
-    estimated_current_disruption_probability: float
-    affected_routes: str  # Pipe-separated route IDs
-    affected_suppliers: str  # Pipe-separated supplier IDs
-    india_import_percentage: float
-
-
-class CorridorResponse(CorridorBase):
-    """Response model for corridor"""
-    pass
+    transit_countries: List[str]
+    chokepoint_type: str
+    annual_traffic_pct_india: float
+    risk_trigger_events: List[str]
+    historical_disruptions: List[str]
 
     class Config:
         from_attributes = True

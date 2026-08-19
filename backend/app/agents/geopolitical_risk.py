@@ -87,42 +87,59 @@ Return ONLY valid JSON (no markdown, no explanations):
         raise ConnectionError("LLM provider not available")
 
 
-def score_risk_for_event(
-    event: Dict,
-    ml_prediction: Optional[float] = None
-) -> Dict:
+def calculate_risk_score(event) -> Dict:
     """
     Convert geopolitical event into a risk score for India's supply chain.
     
     Combines:
     - Event severity
     - India-specific relevance
-    - ML disruption prediction
-    - Affected suppliers/corridors
+    - Event type risk multiplier
+    - Affected corridor criticality
     
     Returns:
     {
-        "risk_score": 0-100,
+        "risk_score_ml": 0-100,
         "confidence": 0-1,
-        "evidence": {
-            "news_signal": 0-1,
-            "sanctions_signal": 0-1,
-            "historical_signal": 0-1
-        }
+        "disruption_probability": 0-1,
+        "sanctions_signal": 0-1,
+        "historical_signal": 0-1
     }
     """
-    logger.debug(f"Scoring risk for event: {event.get('location')}")
+    logger.debug(f"Calculating risk score for event: {event.location}")
     
-    # TODO: Implement in Phase 5
+    # Base risk from severity and india relevance
+    base_risk = (event.severity_raw + event.india_relevance) / 2 * 100  # 0-100
+    
+    # Event type multiplier
+    event_type_multiplier = {
+        "geopolitical_tension": 1.2,
+        "port_disruption": 1.5,
+        "sanctions_action": 1.3,
+        "price_movement": 0.8,
+        "naval_exercise": 1.0,
+        "blockade": 1.8,
+    }.get(event.event_type, 1.0)
+    
+    # Apply multiplier
+    adjusted_risk = min(100, base_risk * event_type_multiplier)
+    
+    # Confidence based on raw confidence and event freshness
+    from datetime import datetime, timedelta
+    time_since_event = datetime.utcnow() - event.timestamp
+    recency_factor = max(0.3, 1.0 - (time_since_event.days / 30))  # Decay over 30 days
+    
+    confidence = event.raw_confidence * recency_factor
+    
+    # Set disruption probability based on risk level
+    disruption_prob = min(0.95, adjusted_risk / 100 * 0.8 + 0.1)
     
     return {
-        "risk_score": 50,
-        "confidence": 0.5,
-        "evidence": {
-            "news_signal": 0.6,
-            "sanctions_signal": 0.4,
-            "historical_signal": 0.5
-        }
+        "risk_score_ml": adjusted_risk,
+        "confidence": confidence,
+        "disruption_probability": disruption_prob,
+        "sanctions_signal": 0.7 if "sanction" in event.event_type.lower() else 0.2,
+        "historical_signal": min(0.8, base_risk / 100),
     }
 
 
