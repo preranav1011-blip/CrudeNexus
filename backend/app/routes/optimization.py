@@ -9,7 +9,7 @@ from app.models.optimization import (
     StrategyResponse,
     StrategyComparisonResponse
 )
-from app.agents.procurement_optimizer import optimize_procurement, explain_strategy
+from app.agents.procurement_optimizer import optimize_procurement
 from app.data.csv_loaders import SupplierLoader, RouteLoader
 from app.data.mock_sources import get_mock_india_crude_demand
 import json
@@ -85,21 +85,27 @@ async def generate_strategies(
                 db_alloc = SupplierAllocation(
                     strategy_id=strategy_id,
                     supplier_id=alloc.get("supplier_id", ""),
-                    allocation_percentage=alloc.get("allocation_percentage", 0)
+                    allocation_percentage=alloc.get("allocation_percentage", 0),
+                    allocated_volume_mbd=alloc.get("allocation_mbd", 0),
+                    allocated_cost=alloc.get("allocated_cost", 0),
                 )
                 db.add(db_alloc)
             
-            saved_strategies.append(StrategyResponse.from_orm(db_strategy))
+            saved_strategies.append(StrategyResponse.model_validate(db_strategy))
         
         db.commit()
         
         logger.info(f"Generated 3 procurement strategies for demand {india_demand} MBD")
         
+        by_type = {strategy.strategy_type: strategy for strategy in saved_strategies}
+        recommended = by_type["balanced"]
         return OptimizationResultsResponse(
-            strategies=saved_strategies,
+            cheapest=by_type["cheapest"],
+            balanced=recommended,
+            safest=by_type["safest"],
             india_demand_mbd=india_demand,
-            optimization_timestamp=datetime.utcnow(),
-            risk_context=request.risk_assessment_id
+            recommended=recommended.strategy_id,
+            recommendation_reason="Balanced strategy minimizes concentration while maintaining a moderate cost-risk tradeoff.",
         )
         
     except HTTPException:
@@ -129,11 +135,13 @@ async def get_strategy(
             SupplierAllocation.strategy_id == strategy_id
         ).all()
         
-        response = StrategyResponse.from_orm(strategy)
+        response = StrategyResponse.model_validate(strategy)
         response.allocations = [
             {
                 "supplier_id": a.supplier_id,
-                "allocation_percentage": a.allocation_percentage
+                "allocation_percentage": a.allocation_percentage,
+                "allocated_volume_mbd": a.allocated_volume_mbd or 0,
+                "allocated_cost": a.allocated_cost or 0,
             }
             for a in allocations
         ]
@@ -147,7 +155,7 @@ async def get_strategy(
         raise HTTPException(status_code=500, detail="Error retrieving strategy")
 
 
-@router.post("/compare")
+@router.post("/compare", response_model=StrategyComparisonResponse)
 async def compare_strategies(
     strategy_ids: list[str],
     db: Session = Depends(get_db)
@@ -180,11 +188,16 @@ async def compare_strategies(
                 "total_cost": strategy.total_cost,
                 "avg_risk_score": strategy.avg_risk_score,
                 "avg_transit_time": strategy.avg_transit_time,
-                "supplier_concentration": strategy.supplier_concentration_ratio,
+                "supplier_concentration_ratio": strategy.supplier_concentration_ratio,
+                "total_crude_supply": strategy.total_crude_supply,
+                "explanation": strategy.explanation,
+                "created_at": strategy.created_at,
                 "allocations": [
                     {
                         "supplier_id": a.supplier_id,
-                        "allocation_pct": a.allocation_percentage
+                        "allocation_percentage": a.allocation_percentage,
+                        "allocated_volume_mbd": a.allocated_volume_mbd or 0,
+                        "allocated_cost": a.allocated_cost or 0,
                     }
                     for a in allocations
                 ]
@@ -226,7 +239,7 @@ async def list_strategies(
         strategies = query.offset(offset).limit(limit).all()
         
         return {
-            "strategies": [StrategyResponse.from_orm(s) for s in strategies],
+            "strategies": [StrategyResponse.model_validate(s) for s in strategies],
             "total": total,
             "limit": limit,
             "offset": offset

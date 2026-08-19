@@ -1,4 +1,5 @@
 """Configuration management for CrudeNexus backend"""
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 import os
 
@@ -43,6 +44,14 @@ class Settings(BaseSettings):
         "Paradip Port",
         "Kandla Port",
     ]
+
+    @field_validator("debug", mode="before")
+    @classmethod
+    def parse_debug(cls, value):
+        """Accept common deployment labels as well as conventional booleans."""
+        if isinstance(value, str):
+            return value.strip().lower() in {"1", "true", "yes", "on", "debug", "development"}
+        return value
     
     class Config:
         env_file = ".env"

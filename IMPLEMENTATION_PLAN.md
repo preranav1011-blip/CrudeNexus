@@ -799,9 +799,9 @@ curl http://localhost:11434/api/tags
 - [ ] Create CSV loaders + mock data sources
 
 ### Phase 3: Backend Core
-- [ ] Pydantic models (Event, Supplier, Optimization)
-- [ ] SQLAlchemy ORM + database init
-- [ ] API endpoints (CRUD for events, data retrieval)
+- [x] Pydantic models (Event, Supplier, Optimization)
+- [x] SQLAlchemy ORM + database init
+- [x] API endpoints (CRUD for events, data retrieval)
 
 ### Phase 4: ML Pipeline
 - [ ] Feature engineering module

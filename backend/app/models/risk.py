@@ -1,5 +1,6 @@
 """Pydantic models for risk analysis"""
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
+import json
 from typing import Optional, List
 from datetime import datetime
 
@@ -28,3 +29,35 @@ class RiskAssessmentResponse(BaseModel):
     
     class Config:
         from_attributes = True
+
+    @model_validator(mode="before")
+    @classmethod
+    def adapt_orm_assessment(cls, value):
+        """Translate database column names into the public API contract."""
+        if isinstance(value, dict):
+            data = dict(value)
+        else:
+            data = {
+                field: getattr(value, field, None)
+                for field in cls.model_fields
+            }
+            data["risk_score"] = getattr(value, "risk_score_ml", None)
+            data["evidence_signals"] = {
+                "news": getattr(value, "evidence_news_signal", None),
+                "sanctions": getattr(value, "evidence_sanctions_signal", None),
+                "historical": getattr(value, "evidence_historical", None),
+            }
+            raw_suppliers = getattr(value, "affected_suppliers", "") or ""
+            try:
+                data["affected_suppliers"] = json.loads(raw_suppliers)
+            except (TypeError, json.JSONDecodeError):
+                data["affected_suppliers"] = [item for item in raw_suppliers.split(",") if item]
+        return data
+
+
+class RiskAssessmentListResponse(BaseModel):
+    """Paginated risk-assessment collection."""
+    assessments: List[RiskAssessmentResponse]
+    total: int
+    limit: int
+    offset: int

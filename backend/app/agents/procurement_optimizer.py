@@ -331,29 +331,14 @@ def _calculate_concentration_ratio(allocations: List[Dict]) -> float:
 
 
 logger.info("Procurement optimizer initialized")
-    
-    Explains:
-    - Supplier allocation choices
-    - Why this strategy is recommended
-    - Tradeoffs (cost vs risk vs transit time)
-    - Constraints satisfied
-    
-    Returns: Explanation text
-    """
-    logger.debug(f"Explaining strategy: {strategy.get('strategy_type')}")
-    
-    # TODO: Implement in Phase 6
-    
-    return """
-    This strategy balances cost, risk, and resilience.
-    
-    Allocations recommended for:
-    - Cost impact: +6.2%
-    - Risk reduction: 38%
-    - Transit time impact: +2.1 days
-    
-    Why: Reduces exposure to affected corridor while maintaining supply.
-    """
+
+
+def explain_strategy(strategy: Dict) -> str:
+    """Return the persisted, human-readable explanation for a strategy."""
+    return strategy.get("explanation") or (
+        "This strategy compares procurement cost, geopolitical risk, transit time, "
+        "and supplier concentration for India's crude requirement."
+    )
 
 
 def recommend_strategy(

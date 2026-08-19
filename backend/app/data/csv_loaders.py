@@ -67,14 +67,18 @@ class RouteLoader:
                 for row in reader:
                     route = {
                         'route_id': row.get('route_id', ''),
-                        'origin': row.get('origin', ''),
-                        'destination': row.get('destination', ''),
-                        'corridor_name': row.get('corridor_name', ''),
+                        'route_name': row.get('route_name', ''),
+                        'origin': row.get('origin_port') or row.get('origin', ''),
+                        'destination': row.get('destination_port') or row.get('destination', ''),
+                        'corridor_name': row.get('corridor') or row.get('corridor_name', ''),
                         'distance_km': float(row.get('distance_km', 0)),
-                        'transit_days': float(row.get('transit_days', 0)),
+                        'transit_days': float(row.get('transit_time_days') or row.get('transit_days', 0)),
                         'capacity_mbd': float(row.get('capacity_mbd', 0)),
-                        'chokepoint': row.get('chokepoint', ''),
-                        'geopolitical_risk_score': float(row.get('geopolitical_risk_score', 50)),
+                        'chokepoint': row.get('corridor') or row.get('chokepoint', ''),
+                        'geopolitical_risk_score': float(
+                            row.get('baseline_risk_score') or row.get('geopolitical_risk_score', 50)
+                        ),
+                        'is_blocked': (row.get('is_blocked', '0').strip().lower() in {'1', 'true', 'yes'}),
                     }
                     routes.append(route)
             logger.info(f"Loaded {len(routes)} routes from CSV")
@@ -137,7 +141,7 @@ class CorridorLoader:
                 reader = csv.DictReader(f)
                 for row in reader:
                     corridor = {
-                        'corridor_id': row.get('corridor_id', ''),
+                        'corridor_id': row.get('corridor_id') or row.get('corridor_name', ''),
                         'corridor_name': row.get('corridor_name', ''),
                         'location': row.get('location', ''),
                         'transit_countries': row.get('transit_countries', '').split(';'),

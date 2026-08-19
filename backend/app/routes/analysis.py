@@ -39,11 +39,15 @@ async def analyze_risk(
         # Get affected corridor routes and suppliers
         affected_corridor = event.affected_corridor or "Unknown"
         corridors = CorridorLoader.load_corridors()
-        corridor_info = next((c for c in corridors if c.get('corridor_id') == affected_corridor), {})
+        corridor_info = next(
+            (c for c in corridors if affected_corridor in {c.get('corridor_id'), c.get('corridor_name')}),
+            {},
+        )
+        corridor_name = corridor_info.get('corridor_name', affected_corridor)
         
         # Calculate supply exposure
         exposure = calculate_supply_exposure(
-            corridor=affected_corridor,
+            corridor=corridor_name,
             risk_score=risk_data.get("risk_score_ml", 50),
             event=event
         )
@@ -51,7 +55,7 @@ async def analyze_risk(
         db_assessment = RiskAssessment(
             assessment_id=assessment_id,
             event_id=event_id,
-            corridor_name=affected_corridor,
+            corridor_name=corridor_name,
             risk_score_ml=risk_data.get("risk_score_ml", 50),
             risk_confidence=risk_data.get("confidence", 0.7),
             disruption_probability_7d=risk_data.get("disruption_probability", 0.5),
@@ -59,7 +63,7 @@ async def analyze_risk(
             evidence_sanctions_signal=risk_data.get("sanctions_signal", 0.0),
             evidence_historical=risk_data.get("historical_signal", 0.3),
             india_exposure_percentage=exposure.get("exposed_percentage", 25),
-            affected_suppliers=",".join(exposure.get("affected_suppliers", [])),
+            affected_suppliers=__import__("json").dumps(exposure.get("affected_suppliers", [])),
         )
         
         db.add(db_assessment)
