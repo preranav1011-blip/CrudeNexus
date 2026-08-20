@@ -144,11 +144,16 @@ class CorridorLoader:
                         'corridor_id': row.get('corridor_id') or row.get('corridor_name', ''),
                         'corridor_name': row.get('corridor_name', ''),
                         'location': row.get('location', ''),
-                        'transit_countries': row.get('transit_countries', '').split(';'),
+                        'transit_countries': [item for item in row.get('transit_countries', '').split(';') if item],
                         'chokepoint_type': row.get('chokepoint_type', ''),
-                        'annual_traffic_pct_india': float(row.get('annual_traffic_pct_india', 0)),
-                        'risk_trigger_events': row.get('risk_trigger_events', '').split(';'),
-                        'historical_disruptions': row.get('historical_disruptions', '').split(';'),
+                        'annual_traffic_pct_india': float(row.get('annual_traffic_pct_india') or row.get('india_import_percentage', 0)),
+                        'risk_trigger_events': [item for item in row.get('risk_trigger_events', '').split(';') if item],
+                        'historical_disruptions': [item for item in row.get('historical_disruptions', '').split(';') if item],
+                        'baseline_risk_score': float(row.get('baseline_risk_score', 35)),
+                        'estimated_current_disruption_probability': float(row.get('estimated_current_disruption_probability', 0.05)),
+                        'affected_routes': [item for item in row.get('affected_routes', '').replace('|', ';').split(';') if item],
+                        'affected_suppliers': [item for item in row.get('affected_suppliers', '').replace('|', ';').split(';') if item],
+                        'india_import_percentage': float(row.get('india_import_percentage') or row.get('annual_traffic_pct_india', 0)),
                     }
                     corridors.append(corridor)
             logger.info(f"Loaded {len(corridors)} corridors from CSV")

@@ -804,10 +804,14 @@ curl http://localhost:11434/api/tags
 - [x] API endpoints (CRUD for events, data retrieval)
 
 ### Phase 4: ML Pipeline
-- [ ] Feature engineering module
-- [ ] Training dataset construction + labelling
-- [ ] Model training (XGBoost)
-- [ ] Inference module
+- [x] Feature engineering module
+- [x] Training dataset construction + labelling
+- [x] Model training (XGBoost)
+- [x] Inference module
+
+Phase 4 provides a reproducible prototype disruption-prediction pipeline. It transforms recent corridor events and documented baseline signals into 21 stable features, generates a labelled synthetic dataset until historical data is connected, and persists an XGBoost artifact with its schema and validation metadata. Inference validates the feature contract and returns a seven-day disruption probability, calibrated confidence, and the strongest contributing signals.
+
+Run `python -m app.ml.training` from `backend/` to create `models/disruption_predictor.pkl`; provide `--data-file` with a labelled CSV containing the same feature schema to retrain on external data.
 
 ### Phase 5: Risk Intelligence Agent
 - [ ] LLM integration (Ollama + Qwen)
