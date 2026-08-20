@@ -1,8 +1,9 @@
-import { Component } from '@angular/core';
-
-@Component({
-  selector: 'app-procurement',
-  standalone: true,
-  template: `<div>Procurement Strategies Component - TODO</div>`,
-})
-export class ProcurementComponent {}
+import { CommonModule } from '@angular/common';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { OptimizationResults, ProcurementStrategy } from '../models/types';
+@Component({ selector: 'app-procurement', standalone: true, imports: [CommonModule, FormsModule], template: `
+  <section class="panel"><div class="heading"><h2>Adaptive procurement</h2><button (click)="generate.emit(riskTolerance)" [disabled]="loading">{{ loading ? 'Optimizing…' : 'Generate strategies' }}</button></div><label>Risk tolerance: <b>{{ riskTolerance | number:'1.1-1' }}</b><input type="range" min="0" max="1" step=".1" [(ngModel)]="riskTolerance"></label><p class="error" *ngIf="error">{{ error }}</p></section>
+  <section class="cards" *ngIf="results"><article *ngFor="let strategy of allStrategies" [class.recommended]="strategy.strategy_id === results.recommended"><h3>{{ strategy.strategy_type }}</h3><b>{{ strategy.total_cost / 1000000 | currency:'USD':'symbol':'1.1-1' }}M/yr</b><span>Risk {{ strategy.avg_risk_score | number:'1.0-0' }}/100 · {{ strategy.avg_transit_time | number:'1.0-1' }} days</span><small>HHI {{ strategy.supplier_concentration_ratio | number:'1.3-3' }}</small><p>{{ strategy.explanation }}</p><div *ngFor="let allocation of strategy.allocations">{{ allocation.supplier_id }} <i [style.width.%]="allocation.allocation_percentage"></i> {{ allocation.allocation_percentage | number:'1.0-0' }}%</div></article></section>
+`, styles: [`.panel,article{background:#12233b;border:1px solid #254260;border-radius:10px;padding:16px}.heading{display:flex;justify-content:space-between;align-items:center}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}.recommended{border-color:#26b4a6}h2,h3{margin:0 0 10px;text-transform:capitalize}article>b,article>span,article>small{display:block;margin:7px 0}input{display:block;width:100%;margin-top:8px}button{background:#26b4a6;color:#03141b;border:0;border-radius:6px;padding:9px 14px;font-weight:700}.error{color:#ff9b83}i{display:inline-block;height:6px;background:#26b4a6;min-width:2px}@media(max-width:800px){.cards{grid-template-columns:1fr}}`] })
+export class ProcurementComponent { @Input() results: OptimizationResults | null = null; @Input() loading = false; @Input() error = ''; @Output() generate = new EventEmitter<number>(); riskTolerance = .5; get allStrategies(): ProcurementStrategy[] { return this.results ? [this.results.cheapest, this.results.balanced, this.results.safest] : []; } }

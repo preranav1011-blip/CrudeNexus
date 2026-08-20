@@ -59,7 +59,7 @@ async def analyze_risk(
             risk_score_ml=risk_data.get("risk_score_ml", 50),
             risk_confidence=risk_data.get("confidence", 0.7),
             disruption_probability_7d=risk_data.get("disruption_probability", 0.5),
-            evidence_news_signal=event.severity_raw,
+            evidence_news_signal=risk_data.get("news_signal", event.severity_raw),
             evidence_sanctions_signal=risk_data.get("sanctions_signal", 0.0),
             evidence_historical=risk_data.get("historical_signal", 0.3),
             india_exposure_percentage=exposure.get("exposed_percentage", 25),
@@ -71,7 +71,7 @@ async def analyze_risk(
         db.refresh(db_assessment)
         
         logger.info(f"Created risk assessment {assessment_id} for event {event_id}")
-        return RiskAssessmentResponse.from_orm(db_assessment)
+        return RiskAssessmentResponse.model_validate(db_assessment)
         
     except HTTPException:
         raise
@@ -95,7 +95,7 @@ async def get_risk_assessment(
         if not assessment:
             raise HTTPException(status_code=404, detail=f"Assessment {assessment_id} not found")
         
-        return RiskAssessmentResponse.from_orm(assessment)
+        return RiskAssessmentResponse.model_validate(assessment)
         
     except HTTPException:
         raise
@@ -178,7 +178,7 @@ async def list_assessments(
         assessments = query.offset(offset).limit(limit).all()
         
         return RiskAssessmentListResponse(
-            assessments=[RiskAssessmentResponse.from_orm(a) for a in assessments],
+            assessments=[RiskAssessmentResponse.model_validate(a) for a in assessments],
             total=total,
             limit=limit,
             offset=offset

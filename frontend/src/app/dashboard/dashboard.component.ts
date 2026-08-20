@@ -1,8 +1,12 @@
-import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { GeopoliticalEvent, RiskSummary } from '../models/types';
 
-@Component({
-  selector: 'app-dashboard',
-  standalone: true,
-  template: `<div>Dashboard Component - TODO</div>`,
-})
-export class DashboardComponent {}
+@Component({ selector: 'app-dashboard', standalone: true, imports: [CommonModule, FormsModule], template: `
+  <section class="grid" *ngIf="risks as summary"><article><small>India corridor risk</small><strong>{{ summary.average_risk | number:'1.0-0' }}/100</strong></article><article><small>Highest alert</small><strong class="danger">{{ summary.highest_risk | number:'1.0-0' }}/100</strong></article><article><small>Critical corridors</small><strong>{{ summary.total_corridors }}</strong></article></section>
+  <section class="panel"><h2>Analyze a geopolitical event</h2><form (ngSubmit)="submit()"><textarea [(ngModel)]="description" name="description" placeholder="Paste a crude supply, shipping, sanctions, or corridor event…"></textarea><button [disabled]="!description.trim() || loading">{{ loading ? 'Analyzing…' : 'Analyze impact' }}</button></form><p class="error" *ngIf="error">{{ error }}</p></section>
+  <section class="panel"><h2>Corridor risk</h2><div class="corridor" *ngFor="let corridor of risks?.corridors"><span>{{ corridor.corridor_name }}</span><b [class.danger]="corridor.risk_score >= 60">{{ corridor.risk_score | number:'1.0-0' }}/100</b><small>{{ corridor.india_exposure_pct }}% India exposure</small></div></section>
+  <section class="panel"><h2>Latest events</h2><p *ngIf="!events.length">No events yet.</p><div class="event" *ngFor="let event of events"><b>{{ event.affected_corridor || event.location }}</b><span>{{ event.description }}</span><small>{{ event.timestamp | date:'medium' }}</small></div></section>
+`, styles: [`.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.grid article,.panel{background:#12233b;border:1px solid #254260;border-radius:10px;padding:16px}.grid strong{display:block;font-size:26px;margin-top:5px}.danger,.error{color:#ff9b83}.panel{margin-top:14px}h2{font-size:17px;margin:0 0 10px}textarea{width:100%;min-height:76px;box-sizing:border-box;background:#091727;color:#eff7ff;border:1px solid #42647f;border-radius:6px;padding:10px}button{margin-top:8px;background:#26b4a6;color:#03141b;border:0;border-radius:6px;padding:9px 14px;font-weight:700}.corridor,.event{display:grid;grid-template-columns:1fr auto auto;gap:12px;padding:9px 0;border-top:1px solid #254260}.event{grid-template-columns:150px 1fr auto}@media(max-width:650px){.grid{grid-template-columns:1fr}.event{grid-template-columns:1fr}}`] })
+export class DashboardComponent { @Input() risks: RiskSummary | null = null; @Input() events: GeopoliticalEvent[] = []; @Input() loading = false; @Input() error = ''; @Output() analyze = new EventEmitter<string>(); description = ''; submit() { this.analyze.emit(this.description); this.description = ''; } }

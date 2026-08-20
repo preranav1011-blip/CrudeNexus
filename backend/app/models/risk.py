@@ -52,6 +52,13 @@ class RiskAssessmentResponse(BaseModel):
                 data["affected_suppliers"] = json.loads(raw_suppliers)
             except (TypeError, json.JSONDecodeError):
                 data["affected_suppliers"] = [item for item in raw_suppliers.split(",") if item]
+        signals = data.get("evidence_signals", {})
+        values = [value for value in signals.values() if isinstance(value, (int, float))]
+        if values and "conflicting_signals" not in data:
+            conflict = max(values) - min(values) >= 0.45
+            data["conflicting_signals"] = conflict
+            if conflict:
+                data["conflicting_signals_detail"] = "Risk evidence contains materially divergent signals."
         return data
 
 

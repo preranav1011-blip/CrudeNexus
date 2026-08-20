@@ -814,27 +814,35 @@ Phase 4 provides a reproducible prototype disruption-prediction pipeline. It tra
 Run `python -m app.ml.training` from `backend/` to create `models/disruption_predictor.pkl`; provide `--data-file` with a labelled CSV containing the same feature schema to retrain on external data.
 
 ### Phase 5: Risk Intelligence Agent
-- [ ] LLM integration (Ollama + Qwen)
-- [ ] Event extraction logic
-- [ ] Risk scoring + confidence
-- [ ] Signal conflict detection
+- [x] LLM integration (Ollama + Qwen)
+- [x] Event extraction logic
+- [x] Risk scoring + confidence
+- [x] Signal conflict detection
+
+Phase 5 adds a soft-dependency Ollama extractor that requests structured JSON and validates it before use; unavailable, malformed, or disabled LLM calls transparently fall back to deterministic heuristics. The risk agent combines event severity, India relevance, recency, sanctions, corridor history, and optional Phase 4 predictions into an explainable seven-day disruption score. It also flags material disagreement between news, sanctions, historical, and model signals so downstream recommendations can communicate uncertainty.
 
 ### Phase 6: Supply Chain & Optimization
-- [ ] NetworkX supply-chain graph
-- [ ] Supply exposure calculation
-- [ ] OR-Tools procurement optimizer
-- [ ] Multi-strategy generation (cheapest, balanced, safest)
+- [x] NetworkX supply-chain graph
+- [x] Supply exposure calculation
+- [x] OR-Tools procurement optimizer
+- [x] Multi-strategy generation (cheapest, balanced, safest)
+
+Phase 6 models each committed supplier-to-India maritime path in a NetworkX graph and calculates exposure from the corridor master dataset instead of hard-coded mappings. Its OR-Tools optimizer enforces supplier and route capacities, excludes blocked corridors/routes, incorporates an active risk assessment into route risk, and produces cheapest, balanced, and safest allocations with cost, risk, transit, and concentration metrics.
 
 ### Phase 7: API Integration
-- [ ] Connect all endpoints
-- [ ] Database persistence
-- [ ] Error handling + validation
+- [x] Connect all endpoints
+- [x] Database persistence
+- [x] Error handling + validation
+
+Phase 7 verifies the complete backend workflow: an event is ingested, risk-assessed, persisted, used as optimization context, and returned as a retrievable procurement strategy. API request models validate event text, risk tolerance, demand, and blocked corridors; route, supplier, allocation, risk-evidence, and conflict data are consistently serialized for clients.
 
 ### Phase 8: Frontend (Basic)
-- [ ] Dashboard view (risk cards, events feed)
-- [ ] Event analysis view
-- [ ] Procurement strategies view
-- [ ] API service integration
+- [x] Dashboard view (risk cards, events feed)
+- [x] Event analysis view
+- [x] Procurement strategies view
+- [x] API service integration
+
+Phase 8 delivers a standalone Angular dashboard with India corridor-risk cards, an event-analysis form, latest-event feed, procurement risk-tolerance control, side-by-side strategy comparison, and a route view. The shared API and state services connect those views to the FastAPI endpoints and provide visible loading and failure states when the backend is unavailable.
 
 ### Phase 9: Testing & Data
 - [ ] Unit tests for core modules

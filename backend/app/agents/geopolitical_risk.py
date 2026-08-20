@@ -1,146 +1,119 @@
-"""Geopolitical risk intelligence agent"""
+"""Geopolitical risk intelligence with an optional Ollama extraction provider."""
+from __future__ import annotations
+
+from datetime import datetime, timezone
+import json
 import logging
-from typing import Optional, Dict
+import re
+from typing import Any, Dict
+import requests
+
 from app.config import LLM_CONFIG
 from app.data.fallbacks import extract_event_heuristic
 
 logger = logging.getLogger(__name__)
+EVENT_TYPES = {"geopolitical_tension", "geopolitical_conflict", "port_disruption", "sanctions", "blockade", "price_movement", "geopolitical_event"}
 
 
-def extract_event_from_text(text: str) -> Dict:
-    """
-    Extract structured geopolitical event from unstructured text.
-    
-    Tries LLM extraction first (if Ollama available), falls back to heuristic.
-    
-    Returns:
-    {
-        "event_type": "...",
-        "location": "...",
-        "severity": 0.0-1.0,
-        "disruption_probability": 0.0-1.0,
-        "affected_corridor": "...",
-        "india_relevance": 0.0-1.0,
-        "confidence": 0.0-1.0,
-    }
-    """
-    if not text:
-        return extract_event_heuristic(text)
-    
-    # Try LLM extraction if enabled
-    if LLM_CONFIG.get("enabled"):
-        try:
-            return _extract_event_llm(text)
-        except ConnectionError:
-            logger.warning("Ollama unavailable, falling back to heuristic extraction")
-            return extract_event_heuristic(text)
-        except Exception as e:
-            logger.warning(f"LLM extraction failed: {e}, using fallback")
-            return extract_event_heuristic(text)
-    else:
-        logger.debug("LLM disabled in config, using heuristic extraction")
-        return extract_event_heuristic(text)
+def _clamp(value: Any, default: float) -> float:
+    try:
+        return max(0.0, min(1.0, float(value)))
+    except (TypeError, ValueError):
+        return default
+
+
+def _json_from_response(text: str) -> dict:
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        match = re.search(r"\{.*\}", text, re.DOTALL)
+        if not match:
+            raise ValueError("LLM response did not contain a JSON object")
+        return json.loads(match.group())
 
 
 def _extract_event_llm(text: str) -> Dict:
-    """
-    LLM-based event extraction using Ollama + Qwen.
-    
-    Requires Ollama to be running on LLM_CONFIG["base_url"]
-    """
-    logger.debug("Attempting LLM-based event extraction")
-    
+    """Call Ollama's HTTP API. This provider is a soft dependency."""
+    prompt = f"""Extract the India crude-supply event below. Return only JSON with event_type,
+location, severity, disruption_probability, affected_corridor, india_relevance, confidence.
+All numeric values must be between 0 and 1. Use: {', '.join(sorted(EVENT_TYPES))}.
+
+Event: {text}"""
+    response = requests.post(
+        f"{LLM_CONFIG['base_url'].rstrip('/')}/api/generate",
+        json={"model": LLM_CONFIG["model"], "prompt": prompt, "stream": False, "format": "json"},
+        timeout=LLM_CONFIG["timeout"],
+    )
+    response.raise_for_status()
+    return _json_from_response(response.json().get("response", ""))
+
+
+def _normalize_extraction(payload: Dict, fallback: Dict) -> Dict:
+    """Validate untrusted model output and deterministically fill missing fields."""
+    event_type = str(payload.get("event_type") or fallback["event_type"]).lower().strip()
+    if event_type not in EVENT_TYPES:
+        event_type = fallback["event_type"]
+    location = str(payload.get("location") or fallback["location"]).strip() or "Unknown"
+    corridor = str(payload.get("affected_corridor") or fallback["affected_corridor"]).strip() or fallback["affected_corridor"]
+    severity = _clamp(payload.get("severity"), fallback["severity"])
+    return {"event_type": event_type, "location": location, "severity": severity,
+            "disruption_probability": _clamp(payload.get("disruption_probability"), severity * .8),
+            "affected_corridor": corridor, "india_relevance": _clamp(payload.get("india_relevance"), fallback["india_relevance"]),
+            "confidence": _clamp(payload.get("confidence"), .65), "extraction_method": "ollama"}
+
+
+def extract_event_from_text(text: str) -> Dict:
+    """Extract a structured event using Ollama when available, otherwise heuristics."""
+    fallback = extract_event_heuristic(text)
+    if not text or not LLM_CONFIG.get("enabled"):
+        return {**fallback, "extraction_method": "heuristic"}
     try:
-        from langchain.llms import Ollama
-        import json
-        
-        llm = Ollama(
-            model=LLM_CONFIG["model"],
-            base_url=LLM_CONFIG["base_url"],
-        )
-        
-        prompt = f"""Extract structured geopolitical event from this text.
-
-Text: {text}
-
-Return ONLY valid JSON (no markdown, no explanations):
-{{
-  "event_type": "geopolitical_tension|port_disruption|sanctions|price_movement|other",
-  "location": "location name",
-  "severity": 0.0-1.0,
-  "disruption_probability": 0.0-1.0,
-  "affected_corridor": "corridor name or location",
-  "india_relevance": 0.0-1.0,
-  "confidence": 0.0-1.0
-}}"""
-        
-        response = llm(prompt)
-        
-        # Parse JSON response
-        # TODO: Add JSON validation and error handling
-        logger.debug(f"LLM response: {response}")
-        
-        return extract_event_heuristic(text)  # Fallback to heuristic for now
-        
-    except ImportError:
-        logger.warning("LangChain not installed, cannot use LLM extraction")
-        raise ConnectionError("LLM provider not available")
+        return _normalize_extraction(_extract_event_llm(text), fallback)
+    except (requests.RequestException, ValueError, TypeError, json.JSONDecodeError) as error:
+        logger.info("Ollama extraction unavailable or invalid (%s); using heuristic fallback", error)
+        return {**fallback, "extraction_method": "heuristic"}
 
 
-def calculate_risk_score(event) -> Dict:
-    """
-    Convert geopolitical event into a risk score for India's supply chain.
-    
-    Combines:
-    - Event severity
-    - India-specific relevance
-    - Event type risk multiplier
-    - Affected corridor criticality
-    
-    Returns:
-    {
-        "risk_score_ml": 0-100,
-        "confidence": 0-1,
-        "disruption_probability": 0-1,
-        "sanctions_signal": 0-1,
-        "historical_signal": 0-1
-    }
-    """
-    logger.debug(f"Calculating risk score for event: {event.location}")
-    
-    # Base risk from severity and india relevance
-    base_risk = (event.severity_raw + event.india_relevance) / 2 * 100  # 0-100
-    
-    # Event type multiplier
-    event_type_multiplier = {
-        "geopolitical_tension": 1.2,
-        "port_disruption": 1.5,
-        "sanctions_action": 1.3,
-        "price_movement": 0.8,
-        "naval_exercise": 1.0,
-        "blockade": 1.8,
-    }.get(event.event_type, 1.0)
-    
-    # Apply multiplier
-    adjusted_risk = min(100, base_risk * event_type_multiplier)
-    
-    # Confidence based on raw confidence and event freshness
-    from datetime import datetime, timedelta
-    time_since_event = datetime.utcnow() - event.timestamp
-    recency_factor = max(0.3, 1.0 - (time_since_event.days / 30))  # Decay over 30 days
-    
-    confidence = event.raw_confidence * recency_factor
-    
-    # Set disruption probability based on risk level
-    disruption_prob = min(0.95, adjusted_risk / 100 * 0.8 + 0.1)
-    
-    return {
-        "risk_score_ml": adjusted_risk,
-        "confidence": confidence,
-        "disruption_probability": disruption_prob,
-        "sanctions_signal": 0.7 if "sanction" in event.event_type.lower() else 0.2,
-        "historical_signal": min(0.8, base_risk / 100),
-    }
+def detect_signal_conflict(news_signal: float, sanctions_signal: float, historical_signal: float,
+                           model_signal: float | None = None) -> Dict:
+    """Flag materially divergent evidence for an explainable user warning."""
+    signals = {"news": _clamp(news_signal, 0), "sanctions": _clamp(sanctions_signal, 0), "historical": _clamp(historical_signal, 0)}
+    if model_signal is not None:
+        signals["model"] = _clamp(model_signal, 0)
+    low, high = min(signals.values()), max(signals.values())
+    conflict = high - low >= .45
+    detail = None
+    if conflict:
+        high_sources = ", ".join(name for name, value in signals.items() if value >= high - .05)
+        low_sources = ", ".join(name for name, value in signals.items() if value <= low + .05)
+        detail = f"High {high_sources} signal conflicts with low {low_sources} signal."
+    return {"conflicting_signals": conflict, "conflicting_signals_detail": detail, "signals": signals}
 
 
-logger.info("Geopolitical risk agent initialized")
+def calculate_risk_score(event: Any) -> Dict:
+    """Combine event, corridor, sanctions, history, and optional ML evidence."""
+    severity = _clamp(getattr(event, "severity_raw", .5), .5)
+    relevance = _clamp(getattr(event, "india_relevance", .5), .5)
+    raw_confidence = _clamp(getattr(event, "raw_confidence", .5), .5)
+    event_type = str(getattr(event, "event_type", "geopolitical_event")).lower()
+    multipliers = {"geopolitical_tension": 1.2, "geopolitical_conflict": 1.35, "port_disruption": 1.5, "sanctions": 1.3, "blockade": 1.8, "price_movement": .8}
+    rule_probability = _clamp(((severity + relevance) / 2) * multipliers.get(event_type, 1), .5)
+    corridor = getattr(event, "affected_corridor", "Unknown") or "Unknown"
+    historical_signal, model_probability = .35, None
+    try:
+        from app.ml.feature_engineering import engineer_features
+        from app.ml.inference import predict_disruption
+        features = engineer_features([event], corridor)
+        historical_signal = features["historical_disruption_frequency"]
+        model_probability = predict_disruption(corridor, features)["disruption_probability"]
+    except (FileNotFoundError, ImportError, ValueError) as error:
+        logger.debug("ML evidence unavailable: %s", error)
+    sanctions_signal = .75 if "sanction" in event_type else .2
+    news_signal = severity * raw_confidence
+    probability = (.6 * model_probability + .4 * rule_probability) if model_probability is not None else rule_probability
+    timestamp = getattr(event, "timestamp", datetime.now(timezone.utc))
+    timestamp = timestamp.replace(tzinfo=timezone.utc) if getattr(timestamp, "tzinfo", None) is None else timestamp.astimezone(timezone.utc)
+    recency = max(.3, 1 - max(0, (datetime.now(timezone.utc) - timestamp).total_seconds()) / (30 * 86400))
+    conflict = detect_signal_conflict(news_signal, sanctions_signal, historical_signal, model_probability)
+    confidence = _clamp(raw_confidence * recency * (.75 if conflict["conflicting_signals"] else 1), .3)
+    return {"risk_score_ml": round(probability * 100, 2), "confidence": round(confidence, 3), "disruption_probability": round(probability, 4), "news_signal": round(news_signal, 3), "sanctions_signal": sanctions_signal, "historical_signal": round(historical_signal, 3), "model_signal": model_probability, **conflict}
