@@ -29,10 +29,42 @@ def fetch_gdelt_events(
         keywords = settings.gdelt_keywords
     
     events = []
-    
-    # TODO: Implement GDELT API integration
-    # For now, return empty list (will be implemented in Phase 9)
-    
+
+    # Build query string
+    query_str = " ".join(keywords)
+    params = {
+        "query": query_str,
+        "maxrecords": limit,
+    }
+
+    try:
+        resp = requests.get(GDELT_API_URL, params=params, timeout=10)
+        if not resp.ok:
+            logger.warning(f"GDELT request returned status {resp.status_code}")
+            return events
+
+        data = resp.json()
+        # GDELT v2 responses vary by endpoint; try common keys
+        if isinstance(data, dict):
+            # Prefer 'articles' or 'results' if present
+            if "articles" in data and isinstance(data["articles"], list):
+                events = data["articles"]
+            elif "results" in data and isinstance(data["results"], list):
+                events = data["results"]
+            else:
+                # Fallback: try to find top-level list value
+                for v in data.values():
+                    if isinstance(v, list):
+                        events = v
+                        break
+        elif isinstance(data, list):
+            events = data
+
+    except Exception as exc:
+        logger.exception("Failed to fetch or parse GDELT data: %s", exc)
+        # Return empty list on any failure to keep caller resilient
+        return []
+
     logger.info(f"Fetched {len(events)} events from GDELT (keywords: {', '.join(keywords[:3])}...)")
     return events
 
@@ -40,16 +72,16 @@ def fetch_gdelt_events(
 def query_gdelt(query: str) -> List[dict]:
     """
     Query GDELT with a specific search term.
-    
+
     Args:
         query: Search query string
-    
+
     Returns:
         List of matching events
     """
-    # TODO: Implement actual GDELT API call
     logger.debug(f"Querying GDELT for: {query}")
-    return []
+    # Reuse fetch_gdelt_events with the single query term
+    return fetch_gdelt_events(keywords=[query], hours_back=24, limit=100)
 
 
 logger.info("GDELT fetcher initialized")
