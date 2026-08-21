@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
+    "start": "ng serve --host 0.0.0.0 --port 4200 --proxy-config proxy.conf.json",
+    "dev": "npm run start",
     "build": "ng build",
     "watch": "ng build --watch --configuration development"
   },

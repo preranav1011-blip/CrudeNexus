@@ -845,9 +845,11 @@ Phase 7 verifies the complete backend workflow: an event is ingested, risk-asses
 Phase 8 delivers a standalone Angular dashboard with India corridor-risk cards, an event-analysis form, latest-event feed, procurement risk-tolerance control, side-by-side strategy comparison, and a route view. The shared API and state services connect those views to the FastAPI endpoints and provide visible loading and failure states when the backend is unavailable.
 
 ### Phase 9: Testing & Data
-- [ ] Unit tests for core modules
-- [ ] Sample scenarios + integration test
-- [ ] GDELT data fetching + processing
+- [x] Unit tests for core modules (backend pytest suite: loader, ML pipeline, optimization, API workflow)
+- [x] Sample scenarios + integration test (validated end-to-end Event → Risk → Strategy API workflow)
+- [x] GDELT data fetching + processing (resilient fetcher and parsing in backend/app/data/loaders.py)
+
+Summary: Phase 9 is complete. The backend now includes a safe GDELT fetcher with graceful error handling, a focused loader unit test, and a passing end-to-end workflow test that exercises API-driven event ingestion, risk generation, and strategy selection. The local backend test suite passes in the project venv and confirms the system remains stable during data-fetching failures.
 
 ### Phase 10: Deployment & Documentation
 - [ ] Setup instructions
